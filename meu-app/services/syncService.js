@@ -127,8 +127,11 @@ const SyncService = {
         'endereco',
         'propriedade',
         'cultivar',
+        'safra',
         'despesas',
-        'cultiva'
+        'investimentos',
+        'agenda',
+        'receitas'
       ];
 
       const results = {};

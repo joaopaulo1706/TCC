@@ -2,6 +2,8 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@react-navigation/drawer": "^7.5.2",
-    "@supabase/supabase-js": "^2.53.0"
+    "@supabase/supabase-js": "^2.57.0",
+    "react": "19.0.0",
+    "react-native": "079.5"
   }
 }
