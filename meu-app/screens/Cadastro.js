@@ -24,12 +24,10 @@ export default function Cadastro({ navigation }) {
 
     try {
       // 1. Cria usuário no Auth
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password: senha,
-        options: {
-          data: { nome },
-        },
+        options: { data: { nome } },
       });
 
       if (error) {
@@ -37,18 +35,32 @@ export default function Cadastro({ navigation }) {
         return;
       }
 
-      // 2. Insere também na tabela "productor"
+      // 2. Faz login automático (pula confirmação de e-mail)
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (loginError) {
+        Alert.alert('Erro no login automático', loginError.message);
+        return;
+      }
+
+      // 3. Pega o user_id do Auth
+      const userId = data.user?.id;
+
+      // 4. Salva no produtor com referência ao user_id
       const { error: insertError } = await supabase
         .from('productor')
-        .insert([{ nome, email }]);
+        .insert([{ user_id: userId, nome, email }]);
 
       if (insertError) {
         Alert.alert('Erro ao salvar na tabela productor', insertError.message);
         return;
       }
 
-      Alert.alert('Sucesso', 'Usuário cadastrado com sucesso!');
-      navigation.navigate('Login');
+      Alert.alert('Sucesso', 'Usuário cadastrado e logado com sucesso!');
+      navigation.navigate('TelaPrincipal');
     } catch (e) {
       console.error(e);
       Alert.alert('Erro', 'Não foi possível cadastrar.');

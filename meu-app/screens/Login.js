@@ -7,11 +7,41 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { supabase } from '../config/supabaseClient';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+
+  const handleLogin = async () => {
+    if (!email || !senha) {
+      Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+
+    try {
+      // Faz login no Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (error) {
+        Alert.alert('Erro no login', error.message);
+        return;
+      }
+
+      if (data.user) {
+        Alert.alert('Sucesso', `Bem-vindo, ${data.user.email}`);
+        navigation.navigate('TelaPrincipal');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Não foi possível realizar login.');
+    }
+  };
 
   return (
     <ImageBackground
@@ -37,6 +67,7 @@ export default function Login({ navigation }) {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
+              keyboardType="email-address"
             />
             <TextInput
               placeholder="Senha:"
@@ -46,22 +77,8 @@ export default function Login({ navigation }) {
               onChangeText={setSenha}
             />
 
-            <TouchableOpacity onPress={() => {/* lógica para recuperar senha */}}>
-              <Text style={styles.link}>Esqueceu a senha?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-  style={styles.button}
-  onPress={() => navigation.navigate('TelaPrincipal')}
->
-  <Text style={styles.buttonText}>Confirmar</Text>
-</TouchableOpacity>
-
-
-            <Text style={styles.ou}>Ou</Text>
-
-            <TouchableOpacity style={styles.googleButton}>
-              <Text style={styles.googleText}>Entrar com google</Text>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
+              <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -71,38 +88,27 @@ export default function Login({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  background: { flex: 1 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     width: '85%',
     borderRadius: 25,
     overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 5,
   },
   topCard: {
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     paddingVertical: 20,
   },
-  logo: {
-    width: 50,
-    height: 50,
-  },
+  logo: { width: 60, height: 60 },
   bottomCard: {
     backgroundColor: '#60b246',
     padding: 20,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 22,
-    marginBottom: 15,
-    fontWeight: 'bold',
-  },
+  title: { fontSize: 22, marginBottom: 15, fontWeight: 'bold', color: '#fff' },
   input: {
     backgroundColor: '#fff',
     width: '100%',
@@ -111,41 +117,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 10,
   },
-  link: {
-    alignSelf: 'flex-start',
-    marginTop: 5,
-    marginBottom: 10,
-    fontSize: 13,
-    color: '#000',
-  },
   button: {
     backgroundColor: '#fff',
-    marginTop: 5,
-    paddingVertical: 10,
+    marginTop: 15,
+    paddingVertical: 12,
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
   },
-  buttonText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  ou: {
-    marginVertical: 10,
-    fontSize: 14,
-    color: '#000',
-  },
-  googleButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  googleText: {
-    fontSize: 16,
-    marginLeft: 5,
-  },
+  buttonText: { fontSize: 16, color: '#000', fontWeight: 'bold' },
 });

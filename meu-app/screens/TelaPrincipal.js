@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,30 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from 'react-native';
+import { supabase } from '../config/supabaseClient';
 
 export default function TelaPrincipal({ navigation }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        setUser(data.user);
+      }
+    };
+    fetchUser();
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Conteúdo principal */}
       <View style={styles.content}>
+        {user && (
+          <Text style={styles.bemVindo}>
+            Bem-vindo, {user.user_metadata?.nome || user.email}!
+          </Text>
+        )}
         <Text style={styles.title}>Meus Cultivos</Text>
         <View style={styles.linha} />
         <Text style={styles.aviso}>Nenhum cultivo cadastrado</Text>
@@ -43,6 +61,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  bemVindo: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    color: '#333',
   },
   title: {
     fontSize: 20,
