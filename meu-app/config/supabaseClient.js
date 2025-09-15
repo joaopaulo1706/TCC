@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
+import Constants from 'expo-constants'
 
-const SUP_URL = process.env.EXPO_PUBLIC_SUPABASE_URL
-const SUP_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY
+const { supabaseUrl, supabaseKey } = Constants.expoConfig.extra
 
-if (!SUP_URL || !SUP_KEY) {
-  console.error("❌ Variáveis não carregadas", SUP_URL, SUP_KEY)
+if (!supabaseUrl || !supabaseKey) {
+  console.error("❌ Variáveis do Supabase não carregadas", supabaseUrl, supabaseKey)
 }
 
-export const supabase = createClient(SUP_URL, SUP_KEY)
+export const supabase = createClient(supabaseUrl, supabaseKey)

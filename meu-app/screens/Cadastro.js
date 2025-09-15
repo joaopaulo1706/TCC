@@ -23,8 +23,8 @@ export default function Cadastro({ navigation }) {
     }
 
     try {
-      // 1. Cria usuário no Auth do Supabase
-      const { data, error } = await supabase.auth.signUp({
+      // 1. Cria usuário no Auth
+      const { error } = await supabase.auth.signUp({
         email,
         password: senha,
         options: {
@@ -106,45 +106,27 @@ export default function Cadastro({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  background: { flex: 1 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     width: '85%',
     borderRadius: 25,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    elevation: 5, // sombra no Android
-    shadowColor: '#000', // sombra no iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 5,
   },
   topCard: {
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     paddingVertical: 20,
   },
-  logo: {
-    width: 60,
-    height: 60,
-  },
+  logo: { width: 60, height: 60 },
   bottomCard: {
     backgroundColor: '#60b246',
     padding: 20,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 22,
-    marginBottom: 15,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
+  title: { fontSize: 22, marginBottom: 15, fontWeight: 'bold', color: '#fff' },
   input: {
     backgroundColor: '#fff',
     width: '100%',
@@ -161,9 +143,5 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  buttonText: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: 'bold',
-  },
+  buttonText: { fontSize: 16, color: '#000', fontWeight: 'bold' },
 });
