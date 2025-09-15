@@ -7,12 +7,53 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { supabase } from '../config/supabaseClient';
 
 export default function Cadastro({ navigation }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+
+  const handleCadastro = async () => {
+    if (!nome || !email || !senha) {
+      Alert.alert('Atenção', 'Preencha todos os campos antes de cadastrar.');
+      return;
+    }
+
+    try {
+      // 1. Cria usuário no Auth do Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          data: { nome },
+        },
+      });
+
+      if (error) {
+        Alert.alert('Erro no cadastro', error.message);
+        return;
+      }
+
+      // 2. Insere também na tabela "productor"
+      const { error: insertError } = await supabase
+        .from('productor')
+        .insert([{ nome, email }]);
+
+      if (insertError) {
+        Alert.alert('Erro ao salvar na tabela productor', insertError.message);
+        return;
+      }
+
+      Alert.alert('Sucesso', 'Usuário cadastrado com sucesso!');
+      navigation.navigate('Login');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Não foi possível cadastrar.');
+    }
+  };
 
   return (
     <ImageBackground
@@ -44,6 +85,7 @@ export default function Cadastro({ navigation }) {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
+              keyboardType="email-address"
             />
             <TextInput
               placeholder="Senha:"
@@ -53,13 +95,9 @@ export default function Cadastro({ navigation }) {
               onChangeText={setSenha}
             />
 
-           <TouchableOpacity
-  style={styles.button}
-  onPress={() => navigation.navigate('TelaPrincipal')}
->
-  <Text style={styles.buttonText}>Cadastrar</Text>
-</TouchableOpacity>
-
+            <TouchableOpacity style={styles.button} onPress={handleCadastro}>
+              <Text style={styles.buttonText}>Cadastrar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -80,6 +118,12 @@ const styles = StyleSheet.create({
     width: '85%',
     borderRadius: 25,
     overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 5, // sombra no Android
+    shadowColor: '#000', // sombra no iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   topCard: {
     backgroundColor: '#f0f0f0',
@@ -87,8 +131,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
   },
   bottomCard: {
     backgroundColor: '#60b246',
@@ -99,6 +143,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     marginBottom: 15,
     fontWeight: 'bold',
+    color: '#fff',
   },
   input: {
     backgroundColor: '#fff',
@@ -111,7 +156,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#fff',
     marginTop: 15,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
@@ -119,5 +164,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: '#000',
+    fontWeight: 'bold',
   },
 });
