@@ -22,6 +22,13 @@ export default function TelaSelecao({ route, navigation }) {
 
         <TouchableOpacity
           style={styles.botao}
+          onPress={() => navigation.navigate('Vendas', { cultivo })}
+        >
+          <Text style={styles.textoBotao}>Vendas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.botao}
           onPress={() => navigation.navigate('TelaDespesas', { cultivo })}
         >
           <Text style={styles.textoBotao}>Despesas</Text>

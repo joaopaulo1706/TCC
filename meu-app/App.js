@@ -12,6 +12,9 @@ import TelaDespesas from './screens/TelaDespesas';
 import TelaAdicionarDespesa from './screens/TelaAdicionarDespesa';
 import TelaInvestimentos from './screens/TelaInvestimentos';
 import TelaAdicionarInvestimento from './screens/TelaAdicionarInvestimento';
+import TelaReceitas from './screens/TelaReceitas';
+import Vendas from './screens/Vendas';
+import AdicionarVenda from './screens/AdicionarVenda';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -28,6 +31,9 @@ export default function App() {
         <Stack.Screen name="TelaAdicionarDespesa" component={TelaAdicionarDespesa} />
         <Stack.Screen name="TelaInvestimentos" component={TelaInvestimentos} />
         <Stack.Screen name="TelaAdicionarInvestimento" component={TelaAdicionarInvestimento} />
+        <Stack.Screen name="TelaReceitas" component={TelaReceitas} />
+        <Stack.Screen name="Vendas" component={Vendas} />
+        <Stack.Screen name="AdicionarVenda" component={AdicionarVenda} />
       </Stack.Navigator>
     </NavigationContainer>
   );
