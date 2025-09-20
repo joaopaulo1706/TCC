@@ -5,21 +5,54 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  ScrollView,
 } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
 export default function TelaPrincipal({ navigation }) {
   const [user, setUser] = useState(null);
+  const [cultivos, setCultivos] = useState([]);
+
+  const carregarCultivos = async () => {
+    try {
+      // pega usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (!user) return;
+
+      // busca produtor vinculado ao usuário
+      const { data: produtor } = await supabase
+        .from('productor')
+        .select('uuid_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!produtor) return;
+
+      // busca cultivos vinculados ao produtor
+      const { data, error } = await supabase
+        .from('cultivo')
+        .select('*')
+        .eq('produtor_id', produtor.uuid_id);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setCultivos(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data?.user) {
-        setUser(data.user);
-      }
-    };
-    fetchUser();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      carregarCultivos(); // recarrega ao voltar para tela
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -32,7 +65,23 @@ export default function TelaPrincipal({ navigation }) {
         )}
         <Text style={styles.title}>Meus Cultivos</Text>
         <View style={styles.linha} />
-        <Text style={styles.aviso}>Nenhum cultivo cadastrado</Text>
+
+        <ScrollView>
+          {cultivos.length === 0 ? (
+            <Text style={styles.aviso}>Nenhum cultivo cadastrado</Text>
+          ) : (
+            cultivos.map((cultivo) => (
+              <TouchableOpacity
+              key={cultivo.id}
+             style={styles.card}
+            onPress={() => navigation.navigate('TelaSelecao', { cultivo })}
+         >
+         <Text style={styles.cardText}>{cultivo.nome}</Text>
+  </TouchableOpacity>
+))
+
+          )}
+        </ScrollView>
       </View>
 
       {/* Fundo com imagem e botão */}
@@ -83,6 +132,17 @@ const styles = StyleSheet.create({
     color: 'brown',
     marginTop: 15,
     fontSize: 16,
+  },
+  card: {
+    backgroundColor: '#f5e9c9',
+    padding: 15,
+    marginTop: 10,
+    borderRadius: 8,
+    elevation: 3,
+  },
+  cardText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   footer: {
     height: 150,

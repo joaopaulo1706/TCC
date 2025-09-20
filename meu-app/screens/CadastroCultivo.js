@@ -1,111 +1,193 @@
-// CadastroCultivo.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { supabase } from '../config/supabaseClient';
 
 export default function CadastroCultivo({ navigation }) {
   const [identificacao, setIdentificacao] = useState('');
   const [endereco, setEndereco] = useState('');
   const [area, setArea] = useState('');
-  const [produtividade, setProdutividade] = useState('');
+  const [expectativaProdutividade, setExpectativaProdutividade] = useState('');
   const [ciclo, setCiclo] = useState('');
-  const [nomeCultivo, setNomeCultivo] = useState('');
+  const [nome, setNome] = useState('');
   const [safra, setSafra] = useState('');
 
+  const handleSalvar = async () => {
+    // 🚨 Validação obrigatória
+    if (!identificacao.trim() || !nome.trim()) {
+      Alert.alert(
+        'Atenção',
+        'Preencha pelo menos o nome e a identificação do cultivo.'
+      );
+      return;
+    }
+
+    try {
+      // pega usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // busca produtor vinculado ao user_id
+      const { data: produtor, error: produtorError } = await supabase
+        .from('productor')
+        .select('uuid_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (produtorError || !produtor) {
+        Alert.alert('Erro', 'Não foi possível encontrar o produtor.');
+        return;
+      }
+
+      // insere cultivo
+      const { error: insertError } = await supabase.from('cultivo').insert([
+        {
+          produtor_id: produtor.uuid_id,
+          identificacao,
+          endereco,
+          area,
+          expectativa_produtividade: expectativaProdutividade,
+          ciclo,
+          nome,
+          safra,
+        },
+      ]);
+
+      if (insertError) {
+        console.error(insertError);
+        Alert.alert('Erro', 'Não foi possível cadastrar o cultivo.');
+        return;
+      }
+
+      Alert.alert('Sucesso', 'Cultivo cadastrado com sucesso!');
+      navigation.goBack(); // volta pra TelaPrincipal
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Algo deu errado.');
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Cadastrar Cultivo</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Cadastrar Cultivo</Text>
 
       <Text style={styles.label}>Identificação do cultivo:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: Arroz, milho, etc)" value={identificacao} onChangeText={setIdentificacao} />
-
-      <Text style={styles.label}>Endereço:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: Rua, bairro, cidade, estado)" value={endereco} onChangeText={setEndereco} />
-
-      <Text style={styles.label}>Área:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: 20m², 10 hectares)" value={area} onChangeText={setArea} />
-
-      <Text style={styles.label}>Expectativa de produtividade:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: 200 sc/ha)" value={produtividade} onChangeText={setProdutividade} />
-
-      <Text style={styles.label}>Ciclo:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: 132 dias)" value={ciclo} onChangeText={setCiclo} />
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: Arroz, milho, etc"
+        value={identificacao}
+        onChangeText={setIdentificacao}
+      />
 
       <Text style={styles.label}>Nome do cultivo:</Text>
-      <TextInput style={styles.input} placeholder="(Ex.: Arroz Casa)" value={nomeCultivo} onChangeText={setNomeCultivo} />
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: Arroz Casa"
+        value={nome}
+        onChangeText={setNome}
+      />
+
+      <Text style={styles.label}>Endereço:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: Rua, bairro, cidade, estado"
+        value={endereco}
+        onChangeText={setEndereco}
+      />
+
+      <Text style={styles.label}>Área:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: 20m², 10 hectares"
+        value={area}
+        onChangeText={setArea}
+      />
+
+      <Text style={styles.label}>Expectativa de produtividade:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: 200 sc/ha"
+        value={expectativaProdutividade}
+        onChangeText={setExpectativaProdutividade}
+      />
+
+      <Text style={styles.label}>Ciclo:</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: 132 dias"
+        value={ciclo}
+        onChangeText={setCiclo}
+      />
 
       <Text style={styles.label}>Safra:</Text>
-      <TextInput style={styles.input} placeholder="2024/2025" value={safra} onChangeText={setSafra} />
+      <TextInput
+        style={styles.input}
+        placeholder="Ex.: 2024/2025"
+        value={safra}
+        onChangeText={setSafra}
+      />
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.botaoConfirmar} onPress={() => navigation.goBack()}>
-          <Text style={styles.botaoTextoConfirmar}>Concluir cadastro</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, styles.success]} onPress={handleSalvar}>
+        <Text style={styles.buttonTextGreen}>Concluir cadastro</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.botaoCancelar} onPress={() => navigation.goBack()}>
-          <Text style={styles.botaoTextoCancelar}>Cancelar cadastro</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.button, styles.danger]}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.buttonTextRed}>Cancelar cadastro</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    minHeight: '100%',
-    justifyContent: 'center',
+    flex: 1,
+    backgroundColor: '#f0e8d5',
     padding: 20,
-    backgroundColor: '#F5F0D7',
   },
-  titulo: {
+  title: {
     fontSize: 22,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
-    alignSelf: 'center',
   },
   label: {
     fontWeight: 'bold',
     marginTop: 10,
+    marginBottom: 5,
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#aaa',
+    marginBottom: 15,
     paddingVertical: 5,
-    marginBottom: 10,
   },
-  buttonContainer: {
-    marginTop: 30,
+  button: {
+    marginTop: 15,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  botaoConfirmar: {
-    backgroundColor: '#cfe3c9',
-    padding: 12,
-    borderRadius: 8,
-    width: '80%',
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
+  success: {
+    backgroundColor: '#d4edda',
   },
-  botaoTextoConfirmar: {
-    textAlign: 'center',
+  danger: {
+    backgroundColor: '#f8d7da',
+  },
+  buttonTextGreen: {
     color: 'green',
     fontWeight: 'bold',
   },
-  botaoCancelar: {
-    backgroundColor: '#f5d4cf',
-    padding: 12,
-    borderRadius: 8,
-    width: '80%',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  botaoTextoCancelar: {
-    textAlign: 'center',
-    color: 'brown',
+  buttonTextRed: {
+    color: 'darkred',
     fontWeight: 'bold',
   },
 });
