@@ -8,45 +8,27 @@ import {
 } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
-export default function TelaAdicionarDespesa({ route, navigation }) {
-  const { cultivo, despesa } = route.params || {};
-  const [tipo, setTipo] = useState(despesa ? despesa.tipo : '');
-  const [valor, setValor] = useState(despesa ? String(despesa.valor) : '');
-  const [data, setData] = useState(
-    despesa ? formatarDataParaTela(despesa.data) : ''
-  );
+export default function TelaAdicionarInvestimento({ route, navigation }) {
+  const { cultivo, investimento } = route.params || {};
 
   // Função para exibir a data no formato DD/MM/AAAA
   function formatarDataParaTela(dataBanco) {
     if (!dataBanco) return '';
-    const partes = dataBanco.split('-'); // [YYYY, MM, DD]
+
+    // Se vier com hora (ex: 2025-10-20T00:00:00.000Z)
+    const somenteData = dataBanco.split('T')[0]; // pega só a parte da data
+
+    const partes = somenteData.split('-'); // [YYYY, MM, DD]
     if (partes.length !== 3) return dataBanco;
+
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
   }
 
-  // Função para inserir barras automaticamente
-  const handleDataChange = (texto) => {
-    let digits = texto.replace(/\D/g, ''); // só números
-
-    if (digits.length > 8) digits = digits.slice(0, 8);
-
-    let formatada = digits;
-    if (digits.length > 4) {
-      formatada = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(
-        4
-      )}`;
-    } else if (digits.length > 2) {
-      formatada = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    }
-
-    setData(formatada);
-  };
-
   // Converter para YYYY-MM-DD antes de salvar no banco
   const formatarDataParaBanco = (dataDigitada) => {
-    if (!dataDigitada) return null;
+    if (!dataDigitada) return '';
     const limpa = dataDigitada.replace(/\D/g, '');
-    if (limpa.length !== 8) return null;
+    if (limpa.length !== 8) return '';
 
     const dia = limpa.slice(0, 2);
     const mes = limpa.slice(2, 4);
@@ -55,29 +37,53 @@ export default function TelaAdicionarDespesa({ route, navigation }) {
     return `${ano}-${mes}-${dia}`;
   };
 
- const salvarDespesa = async () => {
-  if (!tipo || !valor || !data) {
-    alert('Preencha todos os campos!');
-    return;
-  }
+  // Estados
+  const [tipo, setTipo] = useState(investimento ? investimento.tipo : '');
+  const [valor, setValor] = useState(investimento ? String(investimento.valor) : '');
+  const [data, setData] = useState(
+    investimento ? formatarDataParaTela(investimento.data) : ''
+  );
 
-  const dataFormatada = formatarDataParaBanco(data);
+  // Função para inserir barras automaticamente enquanto digita
+  const handleDataChange = (texto) => {
+    let digits = texto.replace(/\D/g, ''); // só números
 
-  let error;
-  if (despesa && despesa.cod) {
-    // Atualizar despesa existente
-    ({ error } = await supabase
-      .from('despesas')
-      .update({
-        tipo,
-        valor: parseFloat(valor),
-        data: dataFormatada,
-      })
-      .eq('cod', despesa.cod)
-      .select()); // força retorno para confirmar se alterou
-  } else {
-      // Inserir nova despesa
-      ({ error } = await supabase.from('despesas').insert([
+    if (digits.length > 8) digits = digits.slice(0, 8);
+
+    let formatada = digits;
+    if (digits.length > 4) {
+      formatada = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    } else if (digits.length > 2) {
+      formatada = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+
+    setData(formatada);
+  };
+
+  // Salvar ou atualizar investimento
+  const salvarInvestimento = async () => {
+    if (!tipo || !valor || !data) {
+      alert('Preencha todos os campos!');
+      return;
+    }
+
+    const dataFormatada = formatarDataParaBanco(data);
+
+    let error;
+    if (investimento && investimento.id) {
+      // Atualizar investimento existente
+      ({ error } = await supabase
+        .from('investimentos')
+        .update({
+          tipo,
+          valor: parseFloat(valor),
+          data: dataFormatada,
+        })
+        .eq('id', investimento.id)
+        .select());
+    } else {
+      // Inserir novo investimento
+      ({ error } = await supabase.from('investimentos').insert([
         {
           tipo,
           valor: parseFloat(valor),
@@ -89,9 +95,9 @@ export default function TelaAdicionarDespesa({ route, navigation }) {
 
     if (error) {
       console.error(error);
-      alert('Erro ao salvar despesa');
+      alert('Erro ao salvar investimento');
     } else {
-      alert('Despesa salva com sucesso!');
+      alert('Investimento salvo com sucesso!');
       navigation.goBack();
     }
   };
@@ -99,14 +105,14 @@ export default function TelaAdicionarDespesa({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>
-        {despesa ? 'Editar Despesa' : 'Nova Despesa'}
+        {investimento ? 'Editar Investimento' : 'Novo Investimento'}
       </Text>
       <View style={styles.linha} />
 
-      <Text style={styles.label}>Tipo de despesa:</Text>
+      <Text style={styles.label}>Tipo de investimento:</Text>
       <TextInput
         style={styles.input}
-        placeholder="Ex.: Mão de obra"
+        placeholder="Ex.: Trator"
         value={tipo}
         onChangeText={setTipo}
       />
@@ -140,10 +146,10 @@ export default function TelaAdicionarDespesa({ route, navigation }) {
 
         <TouchableOpacity
           style={[styles.botao, styles.salvar]}
-          onPress={salvarDespesa}
+          onPress={salvarInvestimento}
         >
           <Text style={styles.textoBotao}>
-            {despesa ? 'Salvar Alterações' : 'Salvar'}
+            {investimento ? 'Salvar Alterações' : 'Salvar'}
           </Text>
         </TouchableOpacity>
       </View>

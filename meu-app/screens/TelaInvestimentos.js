@@ -8,18 +8,37 @@ import {
 } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
-export default function TelaDespesas({ route, navigation }) {
+export default function TelaInvestimentos({ route, navigation }) {
   const { cultivo } = route.params;
-  const [despesas, setDespesas] = useState([]);
-  const [expandida, setExpandida] = useState(null); // cod da despesa aberta
+  const [investimentos, setInvestimentos] = useState([]);
+  const [expandida, setExpandida] = useState(null); // id do investimento aberto
 
-  // converte YYYY-MM-DD -> DD/MM/AAAA
-  const formatarDataParaTela = (dataBanco) => {
-    if (!dataBanco) return '';
-    const partes = dataBanco.split('-'); // [YYYY, MM, DD]
-    if (partes.length !== 3) return dataBanco;
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  };
+  // converte YYYY-MM-DD ou objeto Date -> DD/MM/AAAA
+const formatarDataParaTela = (dataBanco) => {
+  if (!dataBanco) return '';
+
+  try {
+    // Se for objeto Date
+    if (dataBanco instanceof Date) {
+      const dia = String(dataBanco.getDate()).padStart(2, '0');
+      const mes = String(dataBanco.getMonth() + 1).padStart(2, '0');
+      const ano = dataBanco.getFullYear();
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    // Se vier como string "2025-10-20"
+    if (typeof dataBanco === 'string' && dataBanco.includes('-')) {
+      const partes = dataBanco.split('-'); // [YYYY, MM, DD]
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    return dataBanco; // fallback
+  } catch (e) {
+    console.error('Erro ao formatar data:', e);
+    return '';
+  }
+};
+
 
   // converte DD/MM/AAAA -> YYYY-MM-DD
   const formatarDataParaBanco = (dataTela) => {
@@ -29,83 +48,83 @@ export default function TelaDespesas({ route, navigation }) {
     return `${partes[2]}-${partes[1]}-${partes[0]}`;
   };
 
-  const carregarDespesas = async () => {
-    const { data, error } = await supabase
-      .from('despesas')
-      .select('*')
-      .eq('cultivo_id', cultivo.id)
-      .order('data', { ascending: false });
+ const carregarInvestimentos = async () => {
+  const { data, error } = await supabase
+    .from('investimentos')
+    .select('*')
+    .eq('cultivo_id', cultivo.id)
+    .order('data', { ascending: false });
 
-    if (error) {
-      console.error(error);
-    } else {
-      // já converte datas para exibir bonito
-      const formatadas = data.map((d) => ({
-        ...d,
-        data: d.data ? formatarDataParaTela(d.data) : '',
-      }));
-      setDespesas(formatadas);
-    }
-  };
+  if (error) {
+    console.error(error);
+  } else {
+    const formatadas = data.map((i) => ({
+      ...i,
+      data: i.data ? formatarDataParaTela(i.data) : '',
+    }));
+    setInvestimentos(formatadas);
+  }
+};
+
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      carregarDespesas();
+      carregarInvestimentos();
     });
     return unsubscribe;
   }, [navigation]);
 
-  // excluir despesa
-  const excluirDespesa = async (cod) => {
-    const { error } = await supabase.from('despesas').delete().eq('cod', cod);
+  // excluir investimento
+  const excluirInvestimento = async (id) => {
+    const { error } = await supabase.from('investimentos').delete().eq('id', id);
     if (error) {
       console.error(error);
-      alert('Erro ao excluir despesa');
+      alert('Erro ao excluir investimento');
     } else {
       setExpandida(null);
-      carregarDespesas();
+      carregarInvestimentos();
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Despesas</Text>
+      <Text style={styles.titulo}>Investimentos</Text>
       <View style={styles.linha} />
 
       <ScrollView contentContainerStyle={styles.lista}>
-        {despesas.length === 0 ? (
-          <Text style={styles.aviso}>Nenhuma despesa</Text>
+        {investimentos.length === 0 ? (
+          <Text style={styles.aviso}>Nenhum investimento</Text>
         ) : (
-          despesas.map((d) => (
-            <View key={d.cod} style={styles.item}>
+          investimentos.map((i) => (
+            <View key={i.id} style={styles.item}>
               {/* cabeçalho com dropdown */}
               <TouchableOpacity
                 style={styles.dropdown}
-                onPress={() => setExpandida(expandida === d.cod ? null : d.cod)}
+                onPress={() => setExpandida(expandida === i.id ? null : i.id)}
               >
-                <Text style={styles.dropdownTexto}>{d.tipo}</Text>
+                <Text style={styles.dropdownTexto}>{i.tipo}</Text>
                 <Text style={styles.seta}>
-                  {expandida === d.cod ? '▲' : '▼'}
+                  {expandida === i.id ? '▲' : '▼'}
                 </Text>
               </TouchableOpacity>
 
               {/* detalhes se expandido */}
-              {expandida === d.cod && (
+              {expandida === i.id && (
                 <View style={styles.detalhes}>
-                  <Text style={styles.itemTexto}>R$ {d.valor}</Text>
+                  <Text style={styles.itemTexto}>R$ {i.valor}</Text>
                   <Text style={styles.itemTexto}>
-                    {d.data ? d.data : 'Sem data'}
+                    {i.data ? i.data : 'Sem data'}
                   </Text>
 
                   <View style={styles.acoes}>
                     <TouchableOpacity
                       style={[styles.botaoAcao, styles.alterar]}
                       onPress={() =>
-                        navigation.navigate('TelaAdicionarDespesa', {
+                        navigation.navigate('TelaAdicionarInvestimento', {
                           cultivo,
-                          despesa: {
-                            ...d,
-                            data: formatarDataParaBanco(d.data), // manda pro input no formato aceito
+                          investimento: {
+                            ...i,
+                            data: formatarDataParaBanco(i.data), // manda pro input no formato aceito
                           },
                         })
                       }
@@ -115,9 +134,9 @@ export default function TelaDespesas({ route, navigation }) {
 
                     <TouchableOpacity
                       style={[styles.botaoAcao, styles.excluir]}
-                      onPress={() => excluirDespesa(d.cod)}
+                      onPress={() => excluirInvestimento(i.id)}
                     >
-                      <Text style={styles.textoBotao}>Excluir despesa</Text>
+                      <Text style={styles.textoBotao}>Excluir investimento</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -129,9 +148,9 @@ export default function TelaDespesas({ route, navigation }) {
 
       <TouchableOpacity
         style={styles.botao}
-        onPress={() => navigation.navigate('TelaAdicionarDespesa', { cultivo })}
+        onPress={() => navigation.navigate('TelaAdicionarInvestimento', { cultivo })}
       >
-        <Text style={styles.textoBotao}>Adicionar despesa</Text>
+        <Text style={styles.textoBotao}>Adicionar investimento</Text>
       </TouchableOpacity>
     </View>
   );

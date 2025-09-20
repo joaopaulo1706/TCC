@@ -10,7 +10,8 @@ import DrawerNavigator from './screens/DrawerNavigator';
 import TelaSelecao from './screens/TelaSelecao';
 import TelaDespesas from './screens/TelaDespesas';
 import TelaAdicionarDespesa from './screens/TelaAdicionarDespesa';
-
+import TelaInvestimentos from './screens/TelaInvestimentos';
+import TelaAdicionarInvestimento from './screens/TelaAdicionarInvestimento';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -25,7 +26,8 @@ export default function App() {
         <Stack.Screen name="TelaSelecao" component={TelaSelecao} />
         <Stack.Screen name="TelaDespesas" component={TelaDespesas} />
         <Stack.Screen name="TelaAdicionarDespesa" component={TelaAdicionarDespesa} />
-
+        <Stack.Screen name="TelaInvestimentos" component={TelaInvestimentos} />
+        <Stack.Screen name="TelaAdicionarInvestimento" component={TelaAdicionarInvestimento} />
       </Stack.Navigator>
     </NavigationContainer>
   );
