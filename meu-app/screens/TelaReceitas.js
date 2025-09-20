@@ -4,9 +4,9 @@ import { supabase } from '../config/supabaseClient';
 
 export default function TelaReceitas({ route, navigation }) {
   const { cultivo } = route.params;
-  const [producao, setProducao] = useState('');
-  const [valorSc, setValorSc] = useState('');
-  const [totalVenda, setTotalVenda] = useState('');
+  const [producao, setProducao] = useState(0);     // produção total
+  const [valorSc, setValorSc] = useState(0);       // valor comercializado médio
+  const [totalVenda, setTotalVenda] = useState(0); // soma total das vendas
   const [despesas, setDespesas] = useState(0);
   const [bruto, setBruto] = useState(0);
   const [liquido, setLiquido] = useState(0);
@@ -35,16 +35,43 @@ export default function TelaReceitas({ route, navigation }) {
     setDespesas(totalDespesas);
   };
 
-  // Atualiza cálculos
+  // Carregar vendas
+  const carregarVendas = async () => {
+    const { data, error } = await supabase
+      .from('vendas')
+      .select('quantidade, valor')
+      .eq('cultivo_id', cultivo.id);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const totalQtd = data.reduce((acc, v) => acc + (Number(v.quantidade) || 0), 0);
+      const totalVal = data.reduce((acc, v) => acc + (Number(v.valor) || 0), 0);
+
+      setProducao(totalQtd);
+      setTotalVenda(totalVal);
+
+      // valor médio por unidade (se quantidade > 0)
+      setValorSc(totalQtd > 0 ? totalVal / totalQtd : 0);
+    } else {
+      setProducao(0);
+      setTotalVenda(0);
+      setValorSc(0);
+    }
+  };
+
+  // Atualizar bruto e líquido sempre que mudar vendas ou despesas
   useEffect(() => {
-    const venda = (Number(producao) || 0) * (Number(valorSc) || 0);
-    setTotalVenda(venda);
-    setBruto(venda);
-    setLiquido(venda - despesas);
-  }, [producao, valorSc, despesas]);
+    setBruto(totalVenda);
+    setLiquido(totalVenda - despesas);
+  }, [totalVenda, despesas]);
 
   useEffect(() => {
     carregarCustos();
+    carregarVendas();
   }, []);
 
   const concluirSafra = async () => {
@@ -80,22 +107,10 @@ export default function TelaReceitas({ route, navigation }) {
       <View style={styles.linha} />
 
       <Text>Produção total (sacas/caixas):</Text>
-      <TextInput
-        style={styles.input}
-        value={producao}
-        onChangeText={setProducao}
-        keyboardType="numeric"
-        placeholder="Ex: 150"
-      />
+      <TextInput style={styles.input} value={String(producao)} editable={false} />
 
-      <Text>Valor comercializado (R$/sc):</Text>
-      <TextInput
-        style={styles.input}
-        value={valorSc}
-        onChangeText={setValorSc}
-        keyboardType="numeric"
-        placeholder="R$"
-      />
+      <Text>Valor comercializado (R$ por saca/caixa):</Text>
+      <TextInput style={styles.input} value={String(valorSc.toFixed(2))} editable={false} />
 
       <Text>Valor total da venda:</Text>
       <TextInput style={styles.input} value={String(totalVenda)} editable={false} />
