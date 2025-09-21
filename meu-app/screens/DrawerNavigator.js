@@ -3,10 +3,25 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import TelaPrincipal from './TelaPrincipal';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { supabase } from '../config/supabaseClient';
 
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation }) {
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error(error);
+      alert('Erro ao encerrar sessão');
+    } else {
+      // Reseta a navegação e volta para a tela inicial (BoasVindas)
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'BoasVindas' }],
+      });
+    }
+  };
+
   return (
     <View style={styles.drawerContainer}>
       {/* Topo com avatar e boas-vindas */}
@@ -20,20 +35,22 @@ function CustomDrawerContent({ navigation }) {
       <View style={styles.menuSection}>
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => {/* lógica para alterar fonte */}}
+          onPress={() => { /* lógica para alterar fonte */ }}
         >
           <MaterialIcons name="text-fields" size={22} color="#222" />
           <Text style={styles.menuText}>Aa</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => {/* lógica para conta */}}
+          onPress={() => { /* lógica para conta */ }}
         >
           <Text style={styles.menuText}>Sua Conta</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => {/* lógica para configurações */}}
+          onPress={() => { /* lógica para configurações */ }}
         >
           <Text style={styles.menuText}>Configurações</Text>
         </TouchableOpacity>
@@ -42,7 +59,7 @@ function CustomDrawerContent({ navigation }) {
       {/* Rodapé com botão de sair */}
       <TouchableOpacity
         style={styles.logoutSection}
-        onPress={() => {/* lógica para logout */}}
+        onPress={handleLogout}
       >
         <Text style={styles.logoutText}>Encerrar Sessão</Text>
       </TouchableOpacity>
@@ -64,7 +81,6 @@ export default function DrawerNavigator() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
       <Drawer.Screen name="Início" component={TelaPrincipal} />
-      {/* Outras telas se quiser */}
     </Drawer.Navigator>
   );
 }
