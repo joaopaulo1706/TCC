@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
-import { supabase } from "../config/supabaseClient";
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '../config/supabaseClient';
 
 export default function AlterarFoto({ navigation }) {
   const [foto, setFoto] = useState(null);
@@ -19,51 +18,20 @@ export default function AlterarFoto({ navigation }) {
   };
 
   const salvarFoto = async () => {
-    if (!foto) {
-      Alert.alert("Erro", "Nenhuma foto selecionada.");
-      return;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw userError || new Error("Usuário não encontrado");
+    // salva no user_metadata
+    const { error } = await supabase.auth.updateUser({
+      data: { foto: foto },
+    });
 
-      // Nome do arquivo (id do usuário garante unicidade)
-      const filePath = `perfil/${user.id}.jpg`;
-
-      // Upload direto para o Supabase via fetch
-      const fotoBase64 = await FileSystem.readAsStringAsync(foto, { encoding: "base64" });
-      const fotoBuffer = new Uint8Array(
-        atob(fotoBase64)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-
-      const { error: uploadError } = await supabase.storage
-        .from("perfil")
-        .upload(filePath, fotoBuffer, {
-          contentType: "image/jpeg",
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // URL pública
-      const { data } = supabase.storage.from("perfil").getPublicUrl(filePath);
-      const fotoUrl = data.publicUrl;
-
-      // Atualiza no user_metadata
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { foto_url: fotoUrl },
-      });
-
-      if (updateError) throw updateError;
-
-      Alert.alert("Sucesso", "Foto atualizada com sucesso!");
+    if (error) {
+      console.error(error);
+      alert("Erro ao salvar foto");
+    } else {
+      alert("Foto alterada com sucesso!");
       navigation.goBack();
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Erro", "Não foi possível salvar a foto.");
     }
   };
 
@@ -72,23 +40,26 @@ export default function AlterarFoto({ navigation }) {
       <Text style={styles.titulo}>Alterar foto</Text>
       <View style={styles.linha} />
 
-      {foto ? (
-        <Image source={{ uri: foto }} style={styles.foto} />
-      ) : (
-        <View style={styles.placeholder}>
-          <Text>Nenhuma foto selecionada</Text>
-        </View>
-      )}
-
-      <TouchableOpacity style={styles.botao} onPress={escolherFoto}>
-        <Text style={styles.textoBotao}>Adicionar Arquivo</Text>
+      {/* Quadrado grande */}
+      <TouchableOpacity style={styles.caixaFoto} onPress={escolherFoto}>
+        {foto ? (
+          <Image source={{ uri: foto }} style={styles.foto} />
+        ) : (
+          <Text style={styles.placeholderText}>Adicionar Arquivo</Text>
+        )}
       </TouchableOpacity>
 
       <View style={styles.botoes}>
-        <TouchableOpacity style={[styles.botao, styles.cancelar]} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={[styles.botao, styles.cancelar]}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.textoBotao}>Cancelar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.botao, styles.salvar]} onPress={salvarFoto}>
+        <TouchableOpacity
+          style={[styles.botao, styles.salvar]}
+          onPress={salvarFoto}
+        >
           <Text style={styles.textoBotao}>Concluir</Text>
         </TouchableOpacity>
       </View>
@@ -97,30 +68,23 @@ export default function AlterarFoto({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3eedc", padding: 20 },
-  titulo: { fontSize: 22, fontWeight: "bold" },
-  linha: { height: 1, backgroundColor: "#000", marginVertical: 10 },
-  foto: { width: 120, height: 120, borderRadius: 60, alignSelf: "center", marginBottom: 15 },
-  placeholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#ddd",
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-  botoes: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
-  botao: {
-    flex: 1,
-    padding: 15,
-    marginHorizontal: 5,
+  container: { flex: 1, backgroundColor: '#f3eedc', padding: 20 },
+  titulo: { fontSize: 22, fontWeight: 'bold' },
+  linha: { height: 1, backgroundColor: '#000', marginVertical: 10 },
+  caixaFoto: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#E6DBB9',
     borderRadius: 6,
-    alignItems: "center",
-    backgroundColor: "#E6DBB9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  cancelar: { backgroundColor: "#e57373" },
-  salvar: { backgroundColor: "#81c784" },
-  textoBotao: { fontWeight: "600", color: "#000" },
+  foto: { width: '100%', height: '100%', borderRadius: 6 },
+  placeholderText: { color: '#333', fontSize: 16 },
+  botoes: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  botao: { flex: 1, padding: 15, marginHorizontal: 5, borderRadius: 6, alignItems: 'center' },
+  cancelar: { backgroundColor: '#e57373' },
+  salvar: { backgroundColor: '#81c784' },
+  textoBotao: { fontWeight: '600', color: '#fff' },
 });
