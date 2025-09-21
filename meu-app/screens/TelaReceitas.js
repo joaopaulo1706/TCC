@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
 export default function TelaReceitas({ route, navigation }) {
   const { cultivo } = route.params;
-  const [producao, setProducao] = useState(0);     // produção total
-  const [valorSc, setValorSc] = useState(0);       // valor comercializado médio
-  const [totalVenda, setTotalVenda] = useState(0); // soma total das vendas
+  const [producao, setProducao] = useState('');
+  const [valorSc, setValorSc] = useState('');
+  const [totalVenda, setTotalVenda] = useState('');
   const [despesas, setDespesas] = useState(0);
   const [bruto, setBruto] = useState(0);
   const [liquido, setLiquido] = useState(0);
+  const [eventos, setEventos] = useState([]);
 
-  // Carregar despesas e investimentos
+  // Função para carregar despesas + investimentos
   const carregarCustos = async () => {
     const { data: d, error: err1 } = await supabase
       .from('despesas')
@@ -35,53 +36,42 @@ export default function TelaReceitas({ route, navigation }) {
     setDespesas(totalDespesas);
   };
 
-  // Carregar vendas
-  const carregarVendas = async () => {
+  // Função para carregar eventos do cultivo
+  const carregarEventos = async () => {
     const { data, error } = await supabase
-      .from('vendas')
-      .select('quantidade, valor')
-      .eq('cultivo_id', cultivo.id);
+      .from('agenda')
+      .select('*')
+      .eq('cultivo_id', cultivo.id)
+      .order('data', { ascending: true });
 
     if (error) {
       console.error(error);
       return;
     }
-
-    if (data && data.length > 0) {
-      const totalQtd = data.reduce((acc, v) => acc + (Number(v.quantidade) || 0), 0);
-      const totalVal = data.reduce((acc, v) => acc + (Number(v.valor) || 0), 0);
-
-      setProducao(totalQtd);
-      setTotalVenda(totalVal);
-
-      // valor médio por unidade (se quantidade > 0)
-      setValorSc(totalQtd > 0 ? totalVal / totalQtd : 0);
-    } else {
-      setProducao(0);
-      setTotalVenda(0);
-      setValorSc(0);
-    }
+    setEventos(data);
   };
 
-  // Atualizar bruto e líquido sempre que mudar vendas ou despesas
+  // Atualiza cálculos
   useEffect(() => {
-    setBruto(totalVenda);
-    setLiquido(totalVenda - despesas);
-  }, [totalVenda, despesas]);
+    const venda = (Number(producao) || 0) * (Number(valorSc) || 0);
+    setTotalVenda(venda);
+    setBruto(venda);
+    setLiquido(venda - despesas);
+  }, [producao, valorSc, despesas]);
 
   useEffect(() => {
     carregarCustos();
-    carregarVendas();
+    carregarEventos();
   }, []);
 
   const concluirSafra = async () => {
     Alert.alert(
-      "Você tem certeza?",
-      "Ao concluir a safra, você não poderá mais realizar alterações, apenas visualizar.",
+      'Você tem certeza?',
+      'Ao concluir a safra, você não poderá mais realizar alterações, apenas visualizar.',
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: 'Cancelar', style: 'cancel' },
         {
-          text: "Concluir",
+          text: 'Concluir',
           onPress: async () => {
             const { error } = await supabase
               .from('cultivo')
@@ -90,9 +80,9 @@ export default function TelaReceitas({ route, navigation }) {
 
             if (error) {
               console.error(error);
-              alert("Erro ao concluir safra!");
+              alert('Erro ao concluir safra!');
             } else {
-              alert("Safra concluída com sucesso!");
+              alert('Safra concluída com sucesso!');
               navigation.goBack();
             }
           },
@@ -101,16 +91,36 @@ export default function TelaReceitas({ route, navigation }) {
     );
   };
 
+  // Função para formatar data
+  const formatarData = (data) => {
+    if (!data) return '';
+    const partes = data.split('-'); // YYYY-MM-DD
+    if (partes.length !== 3) return data;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.titulo}>Receitas</Text>
       <View style={styles.linha} />
 
       <Text>Produção total (sacas/caixas):</Text>
-      <TextInput style={styles.input} value={String(producao)} editable={false} />
+      <TextInput
+        style={styles.input}
+        value={producao}
+        onChangeText={setProducao}
+        keyboardType="numeric"
+        placeholder="Ex: 150"
+      />
 
       <Text>Valor comercializado (R$ por saca/caixa):</Text>
-      <TextInput style={styles.input} value={String(valorSc.toFixed(2))} editable={false} />
+      <TextInput
+        style={styles.input}
+        value={valorSc}
+        onChangeText={setValorSc}
+        keyboardType="numeric"
+        placeholder="R$"
+      />
 
       <Text>Valor total da venda:</Text>
       <TextInput style={styles.input} value={String(totalVenda)} editable={false} />
@@ -124,10 +134,28 @@ export default function TelaReceitas({ route, navigation }) {
       <Text>Valor líquido:</Text>
       <TextInput style={styles.input} value={String(liquido)} editable={false} />
 
+      {/* Eventos realizados */}
+      <Text style={[styles.titulo, { marginTop: 20 }]}>
+        Eventos realizados durante esta safra:
+      </Text>
+      {eventos.length === 0 ? (
+        <Text style={styles.aviso}>Nenhum evento cadastrado</Text>
+      ) : (
+        eventos.map((ev) => (
+          <View key={ev.id} style={styles.itemEvento}>
+            <Text style={styles.data}>{formatarData(ev.data)}</Text>
+            <Text style={styles.texto}>{ev.evento}</Text>
+            {ev.observacao ? (
+              <Text style={styles.obs}>Obs: {ev.observacao}</Text>
+            ) : null}
+          </View>
+        ))
+      )}
+
       <TouchableOpacity style={styles.botao} onPress={concluirSafra}>
         <Text style={styles.textoBotao}>Concluir safra</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -151,4 +179,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   textoBotao: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  aviso: { fontSize: 16, color: 'red', marginTop: 10 },
+  itemEvento: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
+  },
+  data: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  texto: { fontSize: 14, marginTop: 2 },
+  obs: { fontSize: 13, fontStyle: 'italic', color: '#555', marginTop: 2 },
 });

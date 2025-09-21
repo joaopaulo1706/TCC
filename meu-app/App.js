@@ -15,6 +15,7 @@ import TelaAdicionarInvestimento from './screens/TelaAdicionarInvestimento';
 import TelaReceitas from './screens/TelaReceitas';
 import Vendas from './screens/Vendas';
 import AdicionarVenda from './screens/AdicionarVenda';
+import TelaAgenda from './screens/TelaAgenda';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
         <Stack.Screen name="TelaReceitas" component={TelaReceitas} />
         <Stack.Screen name="Vendas" component={Vendas} />
         <Stack.Screen name="AdicionarVenda" component={AdicionarVenda} />
+        <Stack.Screen name="TelaAgenda" component={TelaAgenda} />
       </Stack.Navigator>
     </NavigationContainer>
   );
