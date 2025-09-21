@@ -11,9 +11,10 @@ import { supabase } from '../config/supabaseClient';
 
 export default function TelaPrincipal({ navigation }) {
   const [user, setUser] = useState(null);
+  const [nomeProdutor, setNomeProdutor] = useState('');
   const [cultivos, setCultivos] = useState([]);
 
-  const carregarCultivos = async () => {
+  const carregarDados = async () => {
     try {
       // pega usuário logado
       const { data: { user } } = await supabase.auth.getUser();
@@ -22,22 +23,25 @@ export default function TelaPrincipal({ navigation }) {
       if (!user) return;
 
       // busca produtor vinculado ao usuário
-      const { data: produtor } = await supabase
+      const { data: produtor, error: err1 } = await supabase
         .from('productor')
-        .select('uuid_id')
+        .select('uuid_id, nome')
         .eq('user_id', user.id)
         .single();
 
-      if (!produtor) return;
+      if (err1 || !produtor) return;
+
+      // guarda o nome atualizado do banco
+      setNomeProdutor(produtor.nome);
 
       // busca cultivos vinculados ao produtor
-      const { data, error } = await supabase
+      const { data, error: err2 } = await supabase
         .from('cultivo')
         .select('*')
         .eq('produtor_id', produtor.uuid_id);
 
-      if (error) {
-        console.error(error);
+      if (err2) {
+        console.error(err2);
         return;
       }
 
@@ -49,8 +53,9 @@ export default function TelaPrincipal({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      carregarCultivos(); // recarrega ao voltar para tela
+      carregarDados(); // recarrega ao voltar para tela
     });
+    carregarDados(); // carrega na primeira vez
     return unsubscribe;
   }, [navigation]);
 
@@ -60,7 +65,7 @@ export default function TelaPrincipal({ navigation }) {
       <View style={styles.content}>
         {user && (
           <Text style={styles.bemVindo}>
-            Bem-vindo, {user.user_metadata?.nome || user.email}!
+            Bem-vindo, {nomeProdutor || user.email}!
           </Text>
         )}
         <Text style={styles.title}>Meus Cultivos</Text>
@@ -72,14 +77,13 @@ export default function TelaPrincipal({ navigation }) {
           ) : (
             cultivos.map((cultivo) => (
               <TouchableOpacity
-              key={cultivo.id}
-             style={styles.card}
-            onPress={() => navigation.navigate('TelaSelecao', { cultivo })}
-         >
-         <Text style={styles.cardText}>{cultivo.nome}</Text>
-  </TouchableOpacity>
-))
-
+                key={cultivo.id}
+                style={styles.card}
+                onPress={() => navigation.navigate('TelaSelecao', { cultivo })}
+              >
+                <Text style={styles.cardText}>{cultivo.nome}</Text>
+              </TouchableOpacity>
+            ))
           )}
         </ScrollView>
       </View>

@@ -1,20 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import TelaPrincipal from './TelaPrincipal';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../config/supabaseClient';
 
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation }) {
+  const [nomeUsuario, setNomeUsuario] = useState('');
+  const [fotoUsuario, setFotoUsuario] = useState(null);
+
+  const carregarUsuario = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setNomeUsuario(user.user_metadata?.nome || user.email);
+      setFotoUsuario(user.user_metadata?.foto || null);
+    }
+  };
+
+  useEffect(() => {
+    carregarUsuario();
+    const unsubscribe = navigation.addListener('focus', carregarUsuario);
+    return unsubscribe;
+  }, [navigation]);
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error(error);
       alert('Erro ao encerrar sessão');
     } else {
-      // Reseta a navegação e volta para a tela inicial (BoasVindas)
       navigation.reset({
         index: 0,
         routes: [{ name: 'BoasVindas' }],
@@ -26,41 +42,36 @@ function CustomDrawerContent({ navigation }) {
     <View style={styles.drawerContainer}>
       {/* Topo com avatar e boas-vindas */}
       <View style={styles.profileSection}>
-        <Feather name="user" size={60} color="#222" />
+        {fotoUsuario ? (
+          <Image source={{ uri: fotoUsuario }} style={styles.avatar} />
+        ) : (
+          <MaterialIcons name="person" size={60} color="#222" />
+        )}
         <Text style={styles.bemVindo}>Bem-Vindo,</Text>
-        <Text style={styles.usuario}>Usuário!</Text>
+        <Text style={styles.usuario}>{nomeUsuario}</Text>
       </View>
 
       {/* Opções do menu */}
       <View style={styles.menuSection}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => { /* lógica para alterar fonte */ }}
-        >
+        <TouchableOpacity style={styles.menuItem}>
           <MaterialIcons name="text-fields" size={22} color="#222" />
           <Text style={styles.menuText}>Aa</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => { /* lógica para conta */ }}
+          onPress={() => navigation.navigate("TelaConta")}
         >
           <Text style={styles.menuText}>Sua Conta</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => { /* lógica para configurações */ }}
-        >
+        <TouchableOpacity style={styles.menuItem}>
           <Text style={styles.menuText}>Configurações</Text>
         </TouchableOpacity>
       </View>
 
       {/* Rodapé com botão de sair */}
-      <TouchableOpacity
-        style={styles.logoutSection}
-        onPress={handleLogout}
-      >
+      <TouchableOpacity style={styles.logoutSection} onPress={handleLogout}>
         <Text style={styles.logoutText}>Encerrar Sessão</Text>
       </TouchableOpacity>
     </View>
@@ -74,9 +85,7 @@ export default function DrawerNavigator() {
         headerShown: true,
         headerStyle: { backgroundColor: '#60b246' },
         headerTintColor: '#fff',
-        drawerStyle: {
-          backgroundColor: '#E6DBB9',
-        },
+        drawerStyle: { backgroundColor: '#E6DBB9' },
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
@@ -96,6 +105,12 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     marginBottom: 18,
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginBottom: 10,
   },
   bemVindo: {
     fontSize: 20,
