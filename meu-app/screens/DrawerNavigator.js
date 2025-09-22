@@ -53,11 +53,6 @@ function CustomDrawerContent({ navigation }) {
 
       {/* Opções do menu */}
       <View style={styles.menuSection}>
-        <TouchableOpacity style={styles.menuItem}>
-          <MaterialIcons name="text-fields" size={22} color="#222" />
-          <Text style={styles.menuText}>Aa</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("TelaConta")}
@@ -65,7 +60,10 @@ function CustomDrawerContent({ navigation }) {
           <Text style={styles.menuText}>Sua Conta</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("TelaConfiguracoes")}
+        >
           <Text style={styles.menuText}>Configurações</Text>
         </TouchableOpacity>
       </View>

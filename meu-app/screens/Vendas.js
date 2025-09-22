@@ -35,7 +35,8 @@ export default function TelaVendas({ route, navigation }) {
       .from('vendas')
       .select('*')
       .eq('cultivo_id', cultivo.id)
-      .order('data', { ascending: false });
+      .order('data', { ascending: false })
+      .order('id', { ascending: false });
 
     if (error) {
       console.error(error);
@@ -102,29 +103,31 @@ export default function TelaVendas({ route, navigation }) {
                     Data: {v.data ? v.data : 'Sem data'}
                   </Text>
 
-                  <View style={styles.acoes}>
-                    <TouchableOpacity
-                      style={[styles.botaoAcao, styles.alterar]}
-                      onPress={() =>
-                        navigation.navigate('AdicionarVenda', {
-                          cultivo,
-                          venda: {
-                            ...v,
-                            data: formatarDataParaBanco(v.data),
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.textoBotao}>Alterar dados</Text>
-                    </TouchableOpacity>
+                  {!cultivo.finalizado && (
+                    <View style={styles.acoes}>
+                      <TouchableOpacity
+                        style={[styles.botaoAcao, styles.alterar]}
+                        onPress={() =>
+                          navigation.navigate('AdicionarVenda', {
+                            cultivo,
+                            venda: {
+                              ...v,
+                              data: formatarDataParaBanco(v.data),
+                            },
+                          })
+                        }
+                      >
+                        <Text style={styles.textoBotao}>Alterar dados</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={[styles.botaoAcao, styles.excluir]}
-                      onPress={() => excluirVenda(v.id)}
-                    >
-                      <Text style={styles.textoBotao}>Excluir venda</Text>
-                    </TouchableOpacity>
-                  </View>
+                      <TouchableOpacity
+                        style={[styles.botaoAcao, styles.excluir]}
+                        onPress={() => excluirVenda(v.id)}
+                      >
+                        <Text style={styles.textoBotao}>Excluir venda</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -132,12 +135,15 @@ export default function TelaVendas({ route, navigation }) {
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.botao}
-        onPress={() => navigation.navigate('AdicionarVenda', { cultivo })}
-      >
-        <Text style={styles.textoBotao}>Adicionar venda</Text>
-      </TouchableOpacity>
+      {/* Só mostra botão se safra não estiver finalizada */}
+      {!cultivo.finalizado && (
+        <TouchableOpacity
+          style={styles.botao}
+          onPress={() => navigation.navigate('AdicionarVenda', { cultivo })}
+        >
+          <Text style={styles.textoBotao}>Adicionar venda</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

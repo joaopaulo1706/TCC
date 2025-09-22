@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from "react-native";
 import { supabase } from "../config/supabaseClient";
 
 export default function TelaConta({ navigation }) {
@@ -24,6 +24,20 @@ export default function TelaConta({ navigation }) {
     });
     return unsubscribe;
   }, [navigation]);
+
+  // Função de logout
+  const sairConta = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }], // Redireciona para tela de login
+      });
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível sair da conta.");
+      console.error(error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -75,11 +89,12 @@ export default function TelaConta({ navigation }) {
         <Text style={styles.textoBotao}>Alterar foto de perfil</Text>
       </TouchableOpacity>
 
+      {/* Botão Sair */}
       <TouchableOpacity
         style={[styles.botao, { backgroundColor: "#e57373" }]}
-        onPress={() => alert("Confirmação antes de excluir conta")}
+        onPress={sairConta}
       >
-        <Text style={styles.textoBotao}>Excluir conta</Text>
+        <Text style={styles.textoBotao}>Sair da conta</Text>
       </TouchableOpacity>
 
       {/* Botão Concluir */}

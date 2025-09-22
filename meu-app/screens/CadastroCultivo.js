@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,17 +10,29 @@ import {
 } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
-export default function CadastroCultivo({ navigation }) {
-  const [identificacao, setIdentificacao] = useState('');
-  const [endereco, setEndereco] = useState('');
-  const [area, setArea] = useState('');
-  const [expectativaProdutividade, setExpectativaProdutividade] = useState('');
-  const [ciclo, setCiclo] = useState('');
-  const [nome, setNome] = useState('');
-  const [safra, setSafra] = useState('');
+export default function CadastroCultivo({ route, navigation }) {
+  const { cultivo } = route.params || {}; // 🔹 se vier cultivo = edição
+
+  const [identificacao, setIdentificacao] = useState(cultivo ? cultivo.identificacao : '');
+  const [endereco, setEndereco] = useState(cultivo ? cultivo.endereco : '');
+  const [area, setArea] = useState(cultivo ? cultivo.area : '');
+  const [expectativaProdutividade, setExpectativaProdutividade] = useState(
+    cultivo ? cultivo.expectativa_produtividade : ''
+  );
+  const [ciclo, setCiclo] = useState(cultivo ? cultivo.ciclo : '');
+  const [nome, setNome] = useState(cultivo ? cultivo.nome : '');
+  const [safra, setSafra] = useState(cultivo ? cultivo.safra : '');
+
+  // 🔹 Define safra padrão só se for cadastro
+  useEffect(() => {
+    if (!cultivo) {
+      const anoAtual = new Date().getFullYear();
+      const safraPadrao = `${anoAtual}/${anoAtual + 1}`;
+      setSafra(safraPadrao);
+    }
+  }, []);
 
   const handleSalvar = async () => {
-    // 🚨 Validação obrigatória
     if (!identificacao.trim() || !nome.trim()) {
       Alert.alert(
         'Atenção',
@@ -30,43 +42,66 @@ export default function CadastroCultivo({ navigation }) {
     }
 
     try {
-      // pega usuário logado
-      const { data: { user } } = await supabase.auth.getUser();
+      if (cultivo && cultivo.id) {
+        // 🔹 Atualizar cultivo existente
+        const { error } = await supabase
+          .from('cultivo')
+          .update({
+            identificacao,
+            endereco,
+            area,
+            expectativa_produtividade: expectativaProdutividade,
+            ciclo,
+            nome,
+            safra,
+          })
+          .eq('id', cultivo.id);
 
-      // busca produtor vinculado ao user_id
-      const { data: produtor, error: produtorError } = await supabase
-        .from('productor')
-        .select('uuid_id')
-        .eq('user_id', user.id)
-        .single();
+        if (error) {
+          console.error(error);
+          Alert.alert('Erro', 'Não foi possível atualizar o cultivo.');
+          return;
+        }
 
-      if (produtorError || !produtor) {
-        Alert.alert('Erro', 'Não foi possível encontrar o produtor.');
-        return;
+        Alert.alert('Sucesso', 'Cultivo atualizado com sucesso!');
+        navigation.goBack();
+      } else {
+        // 🔹 Cadastrar novo cultivo
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { data: produtor, error: produtorError } = await supabase
+          .from('productor')
+          .select('uuid_id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (produtorError || !produtor) {
+          Alert.alert('Erro', 'Não foi possível encontrar o produtor.');
+          return;
+        }
+
+        const { error: insertError } = await supabase.from('cultivo').insert([
+          {
+            produtor_id: produtor.uuid_id,
+            identificacao,
+            endereco,
+            area,
+            expectativa_produtividade: expectativaProdutividade,
+            ciclo,
+            nome,
+            safra,
+          },
+        ]);
+
+        if (insertError) {
+          console.error(insertError);
+          Alert.alert('Erro', 'Não foi possível cadastrar o cultivo.');
+          return;
+        }
+
+        Alert.alert('Sucesso', 'Cultivo cadastrado com sucesso!');
+        navigation.goBack();
       }
-
-      // insere cultivo
-      const { error: insertError } = await supabase.from('cultivo').insert([
-        {
-          produtor_id: produtor.uuid_id,
-          identificacao,
-          endereco,
-          area,
-          expectativa_produtividade: expectativaProdutividade,
-          ciclo,
-          nome,
-          safra,
-        },
-      ]);
-
-      if (insertError) {
-        console.error(insertError);
-        Alert.alert('Erro', 'Não foi possível cadastrar o cultivo.');
-        return;
-      }
-
-      Alert.alert('Sucesso', 'Cultivo cadastrado com sucesso!');
-      navigation.goBack(); // volta pra TelaPrincipal
     } catch (e) {
       console.error(e);
       Alert.alert('Erro', 'Algo deu errado.');
@@ -75,7 +110,9 @@ export default function CadastroCultivo({ navigation }) {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Cadastrar Cultivo</Text>
+      <Text style={styles.title}>
+        {cultivo ? 'Editar Cultivo' : 'Cadastrar Cultivo'}
+      </Text>
 
       <Text style={styles.label}>Identificação do cultivo:</Text>
       <TextInput
@@ -134,14 +171,16 @@ export default function CadastroCultivo({ navigation }) {
       />
 
       <TouchableOpacity style={[styles.button, styles.success]} onPress={handleSalvar}>
-        <Text style={styles.buttonTextGreen}>Concluir cadastro</Text>
+        <Text style={styles.buttonTextGreen}>
+          {cultivo ? 'Salvar Alterações' : 'Concluir cadastro'}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, styles.danger]}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.buttonTextRed}>Cancelar cadastro</Text>
+        <Text style={styles.buttonTextRed}>Cancelar</Text>
       </TouchableOpacity>
     </ScrollView>
   );

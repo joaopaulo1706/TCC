@@ -65,31 +65,34 @@ export default function TelaReceitas({ route, navigation }) {
   }, []);
 
   const concluirSafra = async () => {
-    Alert.alert(
-      'Você tem certeza?',
-      'Ao concluir a safra, você não poderá mais realizar alterações, apenas visualizar.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Concluir',
-          onPress: async () => {
-            const { error } = await supabase
-              .from('cultivo')
-              .update({ finalizado: true })
-              .eq('id', cultivo.id);
+  Alert.alert(
+    'Você tem certeza?',
+    'Ao concluir a safra, você não poderá mais realizar alterações, apenas visualizar.',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Concluir',
+        onPress: async () => {
+          const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-            if (error) {
-              console.error(error);
-              alert('Erro ao concluir safra!');
-            } else {
-              alert('Safra concluída com sucesso!');
-              navigation.goBack();
-            }
-          },
+          const { error } = await supabase
+            .from('cultivo')
+            .update({ finalizado: true, finalizado_em: hoje })
+            .eq('id', cultivo.id);
+
+          if (error) {
+            console.error(error);
+            alert('Erro ao concluir safra!');
+          } else {
+            alert('Safra concluída com sucesso!');
+            navigation.navigate('TelaPrincipal'); // 🔥 volta direto p/ tela inicial
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
+
 
   // Função para formatar data
   const formatarData = (data) => {

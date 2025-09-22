@@ -31,14 +31,14 @@ export default function TelaPrincipal({ navigation }) {
 
       if (err1 || !produtor) return;
 
-      // guarda o nome atualizado do banco
       setNomeProdutor(produtor.nome);
 
-      // busca cultivos vinculados ao produtor
+      // busca cultivos vinculados ao produtor (ordenando pelo mais novo)
       const { data, error: err2 } = await supabase
         .from('cultivo')
         .select('*')
-        .eq('produtor_id', produtor.uuid_id);
+        .eq('produtor_id', produtor.uuid_id)
+        .order('created_at', { ascending: false });
 
       if (err2) {
         console.error(err2);
@@ -53,15 +53,22 @@ export default function TelaPrincipal({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      carregarDados(); // recarrega ao voltar para tela
+      carregarDados();
     });
-    carregarDados(); // carrega na primeira vez
+    carregarDados();
     return unsubscribe;
   }, [navigation]);
 
+  // formatar data YYYY-MM-DD -> DD/MM/AAAA
+  const formatarData = (data) => {
+    if (!data) return '';
+    const partes = data.split('-');
+    if (partes.length !== 3) return data;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Conteúdo principal */}
       <View style={styles.content}>
         {user && (
           <Text style={styles.bemVindo}>
@@ -81,14 +88,26 @@ export default function TelaPrincipal({ navigation }) {
                 style={styles.card}
                 onPress={() => navigation.navigate('TelaSelecao', { cultivo })}
               >
-                <Text style={styles.cardText}>{cultivo.nome}</Text>
+                <Text style={styles.cardText}>
+                  {cultivo.nome} - Safra {cultivo.safra}
+                  {cultivo.tipo ? ` (${cultivo.tipo})` : ''}
+                </Text>
+
+                {/* 🔴 Exibe aviso de safra concluída */}
+                {cultivo.finalizado && (
+                  <Text style={styles.safraConcluida}>
+                    Safra concluída em{' '}
+                    {cultivo.finalizado_em
+                      ? formatarData(cultivo.finalizado_em)
+                      : ''}
+                  </Text>
+                )}
               </TouchableOpacity>
             ))
           )}
         </ScrollView>
       </View>
 
-      {/* Fundo com imagem e botão */}
       <ImageBackground
         source={require('../assets/fundo.jpg')}
         style={styles.footer}
@@ -147,6 +166,12 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  safraConcluida: {
+    fontSize: 12,
+    color: 'red',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   footer: {
     height: 150,

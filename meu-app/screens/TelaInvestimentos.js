@@ -53,7 +53,8 @@ const formatarDataParaTela = (dataBanco) => {
     .from('investimentos')
     .select('*')
     .eq('cultivo_id', cultivo.id)
-    .order('data', { ascending: false });
+    .order('data', { ascending: false })
+    .order('id', { ascending: false });
 
   if (error) {
     console.error(error);
