@@ -8,12 +8,6 @@ export default function TelaConfiguracoes({ navigation }) {
       <View style={styles.linha} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <TouchableOpacity
-          style={styles.botao}
-          onPress={() => navigation.navigate("Tutorial")}
-        >
-          <Text style={styles.textoBotao}>Tutorial</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.botao}

@@ -12,10 +12,15 @@ function CustomDrawerContent({ navigation }) {
   const [fotoUsuario, setFotoUsuario] = useState(null);
 
   const carregarUsuario = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error(error);
+      return;
+    }
+    const user = data.user;
     if (user) {
       setNomeUsuario(user.user_metadata?.nome || user.email);
-      setFotoUsuario(user.user_metadata?.foto || null);
+      setFotoUsuario(user.user_metadata?.foto || null); // 🔥 usa "foto"
     }
   };
 

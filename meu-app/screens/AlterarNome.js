@@ -24,15 +24,26 @@ export default function AlterarNome({ navigation }) {
       return;
     }
 
-    // atualiza na tabela "productor" (ajusta se tua tabela de usuário tiver outro nome)
-    const { error } = await supabase
+    // 1️⃣ atualiza na tabela productor
+    const { error: produtorError } = await supabase
       .from('productor')
       .update({ nome: novoNome })
       .eq('user_id', user.id);
 
-    if (error) {
-      console.error(error);
-      Alert.alert("Erro", "Não foi possível atualizar o nome.");
+    if (produtorError) {
+      console.error(produtorError);
+      Alert.alert("Erro", "Não foi possível atualizar o nome no produtor.");
+      return;
+    }
+
+    // 2️⃣ atualiza também no user_metadata do Supabase
+    const { error: metaError } = await supabase.auth.updateUser({
+      data: { nome: novoNome }
+    });
+
+    if (metaError) {
+      console.error(metaError);
+      Alert.alert("Erro", "Nome alterado no produtor, mas falhou no perfil.");
     } else {
       Alert.alert("Sucesso", "Nome alterado com sucesso!");
       navigation.goBack();
@@ -59,10 +70,16 @@ export default function AlterarNome({ navigation }) {
       />
 
       <View style={styles.botoes}>
-        <TouchableOpacity style={[styles.botao, styles.cancelar]} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={[styles.botao, styles.cancelar]}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.textoBotao}>Cancelar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.botao, styles.salvar]} onPress={salvar}>
+        <TouchableOpacity
+          style={[styles.botao, styles.salvar]}
+          onPress={salvar}
+        >
           <Text style={styles.textoBotao}>Concluir</Text>
         </TouchableOpacity>
       </View>

@@ -22,6 +22,8 @@ import AlterarFoto from './screens/Alterarfoto';
 import TelaConfiguracoes from './screens/TelaConfigurações';
 import TelaConfiguracoesUsuario from './screens/TelaConfiguraçõesUsuario';
 import TelaSuporte from './screens/TelaSuporte';
+import AlterarSenha from './screens/AlterarSenha';
+import AlterarEmail from './screens/AlterarEmail';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -48,6 +50,8 @@ export default function App() {
         <Stack.Screen name="TelaConfiguracoes" component={TelaConfiguracoes} />
         <Stack.Screen name="TelaConfiguracoesUsuario" component={TelaConfiguracoesUsuario} />
         <Stack.Screen name="TelaSuporte" component={TelaSuporte} />
+        <Stack.Screen name="AlterarSenha" component={AlterarSenha} />
+        <Stack.Screen name="AlterarEmail" component={AlterarEmail} />
       </Stack.Navigator>
     </NavigationContainer>
   );

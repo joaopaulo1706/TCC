@@ -90,7 +90,7 @@ export default function TelaReceitas({ route, navigation }) {
   const concluirSafra = async () => {
     Alert.alert(
       'Você tem certeza?',
-      'Ao concluir a safra, você não poderá mais realizar alterações, apenas visualizar.',
+      'Ao concluir a safra, você ainda poderá editar os cultivos.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {

@@ -6,32 +6,24 @@ export default function TelaConta({ navigation }) {
   const [user, setUser] = useState(null);
 
   const carregarUser = async () => {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error) {
-      console.error(error);
-    } else {
-      setUser(user);
+    const { data, error } = await supabase.auth.getUser();
+    if (!error) {
+      setUser(data.user);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      carregarUser();
-    });
+    carregarUser();
+    const unsubscribe = navigation.addListener("focus", carregarUser);
     return unsubscribe;
   }, [navigation]);
 
-  // Função de logout
   const sairConta = async () => {
     try {
       await supabase.auth.signOut();
       navigation.reset({
         index: 0,
-        routes: [{ name: "Login" }], // Redireciona para tela de login
+        routes: [{ name: "Login" }],
       });
     } catch (error) {
       Alert.alert("Erro", "Não foi possível sair da conta.");
@@ -44,13 +36,9 @@ export default function TelaConta({ navigation }) {
       <Text style={styles.titulo}>Sua Conta</Text>
       <View style={styles.linha} />
 
-      {/* Foto, Nome e Email */}
       <View style={styles.perfil}>
-        {user?.user_metadata?.foto_url ? (
-          <Image
-            source={{ uri: user.user_metadata.foto_url }}
-            style={styles.foto}
-          />
+        {user?.user_metadata?.foto ? (   // 🔥 usa "foto"
+          <Image source={{ uri: user.user_metadata.foto }} style={styles.foto} />
         ) : (
           <View style={styles.placeholder}>
             <Text style={{ color: "#555" }}>Sem foto</Text>
@@ -60,7 +48,6 @@ export default function TelaConta({ navigation }) {
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
-      {/* Botões */}
       <TouchableOpacity
         style={styles.botao}
         onPress={() => navigation.navigate("AlterarNome")}
@@ -89,7 +76,6 @@ export default function TelaConta({ navigation }) {
         <Text style={styles.textoBotao}>Alterar foto de perfil</Text>
       </TouchableOpacity>
 
-      {/* Botão Sair */}
       <TouchableOpacity
         style={[styles.botao, { backgroundColor: "#e57373" }]}
         onPress={sairConta}
@@ -97,7 +83,6 @@ export default function TelaConta({ navigation }) {
         <Text style={styles.textoBotao}>Sair da conta</Text>
       </TouchableOpacity>
 
-      {/* Botão Concluir */}
       <TouchableOpacity
         style={[styles.botao, { backgroundColor: "#81c784", marginTop: 20 }]}
         onPress={() => navigation.goBack()}
