@@ -55,14 +55,7 @@ function CustomDrawerContent({ navigation }) {
       <View style={styles.menuSection}>
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate("TelaConta")}
-        >
-          <Text style={styles.menuText}>Sua Conta</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate("TelaConfiguracoes")}
+          onPress={() => navigation.navigate("TelaConfiguracoesUsuario")}
         >
           <Text style={styles.menuText}>Configurações</Text>
         </TouchableOpacity>
