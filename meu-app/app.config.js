@@ -18,7 +18,8 @@ export default {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
-      edgeToEdgeEnabled: true
+      edgeToEdgeEnabled: true,
+      package: "com.anonymous.meuapp" // 👈 já está configurado
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -26,6 +27,9 @@ export default {
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY,
+      eas: {
+        projectId: "4c561c64-cb76-4a90-9c11-9ddeb4373430" // 👈 adicionado
+      }
     }
   }
-}
+};
