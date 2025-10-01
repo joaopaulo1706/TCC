@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-explicit-any",
+        "no-inferrable-types",
+        "no-import-prefix"
+      ]
+    }
+  }
+}

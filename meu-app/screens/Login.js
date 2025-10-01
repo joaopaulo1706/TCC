@@ -8,12 +8,20 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import { supabase } from '../config/supabaseClient';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+
+  // estados do modal de reset
+  const [modalVisible, setModalVisible] = useState(false);
+  const [step, setStep] = useState(1); // 1 = pede email, 2 = pede código + senha
+  const [codigo, setCodigo] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -22,7 +30,6 @@ export default function Login({ navigation }) {
     }
 
     try {
-      // Faz login no Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
@@ -40,6 +47,67 @@ export default function Login({ navigation }) {
     } catch (e) {
       console.error(e);
       Alert.alert('Erro', 'Não foi possível realizar login.');
+    }
+  };
+
+  // 🔹 etapa 1: enviar código pro email
+  const handleEnviarCodigo = async () => {
+    try {
+      const res = await fetch(
+        'https://sxwoiuqwiavwjnazxvag.supabase.co/functions/v1/enviarCodigo',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        Alert.alert('Código enviado', 'Verifique seu e-mail.');
+        setStep(2);
+      } else {
+        Alert.alert('Erro', data.error || 'Não foi possível enviar o código.');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Falha ao conectar.');
+    }
+  };
+
+  // 🔹 etapa 2: validar código e redefinir senha
+  const handleValidarCodigo = async () => {
+    if (novaSenha !== confirmarSenha) {
+      Alert.alert('Erro', 'As senhas não coincidem.');
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        'https://sxwoiuqwiavwjnazxvag.supabase.co/functions/v1/validarCodigo',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, codigo, novaSenha }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        Alert.alert('Sucesso', 'Senha redefinida com sucesso.');
+        setModalVisible(false);
+        setStep(1);
+        setCodigo('');
+        setNovaSenha('');
+        setConfirmarSenha('');
+      } else {
+        Alert.alert('Erro', data.error || 'Código inválido.');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Falha ao conectar.');
     }
   };
 
@@ -77,12 +145,89 @@ export default function Login({ navigation }) {
               onChangeText={setSenha}
             />
 
+            {/* Botão "Esqueceu a senha?" */}
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <Text style={styles.link}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
+
+      {/* 🔹 Modal de Reset de Senha */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalCard}>
+            {step === 1 ? (
+              <>
+                <Text style={styles.modalTitle}>Esqueceu a senha?</Text>
+                <TextInput
+                  placeholder="Digite seu e-mail"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleEnviarCodigo}
+                >
+                  <Text style={styles.buttonText}>Enviar código</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>Digite o código recebido</Text>
+                <TextInput
+                  placeholder="Código"
+                  value={codigo}
+                  onChangeText={setCodigo}
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="Nova senha"
+                  value={novaSenha}
+                  onChangeText={setNovaSenha}
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="Confirmar nova senha"
+                  value={confirmarSenha}
+                  onChangeText={setConfirmarSenha}
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleValidarCodigo}
+                >
+                  <Text style={styles.buttonText}>Redefinir senha</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={[styles.button, { marginTop: 10, backgroundColor: '#ccc' }]}
+              onPress={() => {
+                setModalVisible(false);
+                setStep(1);
+              }}
+            >
+              <Text style={[styles.buttonText, { color: '#000' }]}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 }
@@ -126,4 +271,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { fontSize: 16, color: '#000', fontWeight: 'bold' },
+  link: {
+    marginTop: 10,
+    color: '#fff',
+    textDecorationLine: 'underline',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalCard: {
+    width: '85%',
+    backgroundColor: '#60b246',
+    padding: 20,
+    borderRadius: 15,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#fff',
+    textAlign: 'center',
+  },
 });
