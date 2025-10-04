@@ -1,6 +1,7 @@
 // supabase/functions/enviarCodigo/index.ts
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "server";
+import { createClient } from "@supabase/supabase-js";
+
 
 const PROJECT_URL = Deno.env.get("PROJECT_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY")!;
@@ -45,10 +46,14 @@ serve(async (req: Request) => {
       return json({ error: "E-mail é obrigatório", body }, 400);
     }
 
-    const email = body.email;
+    // ✅ normaliza o e-mail
+    const email = String(body.email).trim().toLowerCase();
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // salva no banco
+    // ✅ invalida códigos antigos do mesmo e-mail antes de criar um novo
+    await supabase.from("reset_codes").update({ usado: true }).eq("email", email);
+
+    // ✅ insere novo código
     const { error: insertError } = await supabase
       .from("reset_codes")
       .insert({ email, codigo });
@@ -57,7 +62,7 @@ serve(async (req: Request) => {
       return json({ error: "Erro ao salvar no banco", details: insertError }, 400);
     }
 
-    // envia com BREVO
+    // ✅ envia com Brevo
     if (BREVO_API_KEY) {
       const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
@@ -82,6 +87,7 @@ serve(async (req: Request) => {
       return json({ message: "Código enviado com sucesso" });
     }
 
+    // fallback: modo teste
     return json({ message: "Código gerado (modo teste)", codigo });
   } catch (err: unknown) {
     return json(
