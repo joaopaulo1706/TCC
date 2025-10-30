@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "b99b9764-f227-4379-8979-818b3afe9d4d"
+      }
+    },
+    "android": {
+      "package": "com.jao_1706.aplicativo"
+    }
+  }
+}
