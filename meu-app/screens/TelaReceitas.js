@@ -9,7 +9,7 @@ export default function TelaReceitas({ route, navigation }) {
 
   const [producao, setProducao] = useState('');
   const [valorSc, setValorSc] = useState('');
-  const [totalVenda, setTotalVenda] = useState('');
+  const [totalVenda, setTotalVenda] = useState(0); // <<< número
   const [despesas, setDespesas] = useState(0);
   const [bruto, setBruto] = useState(0);
   const [liquido, setLiquido] = useState(0);
@@ -18,7 +18,9 @@ export default function TelaReceitas({ route, navigation }) {
   const carregarCustos = async () => {
     const { data: d } = await supabase.from('despesas').select('valor').eq('cultivo_id', cultivo.id);
     const { data: i } = await supabase.from('investimentos').select('valor').eq('cultivo_id', cultivo.id);
-    const total = (d?.reduce((a, b) => a + Number(b.valor), 0) || 0) + (i?.reduce((a, b) => a + Number(b.valor), 0) || 0);
+    const total =
+      (d?.reduce((a, b) => a + Number(b.valor), 0) || 0) +
+      (i?.reduce((a, b) => a + Number(b.valor), 0) || 0);
     setDespesas(total);
   };
 
@@ -32,16 +34,20 @@ export default function TelaReceitas({ route, navigation }) {
   };
 
   const carregarVendas = async () => {
-    const { data } = await supabase.from('vendas').select('quantidade, valor').eq('cultivo_id', cultivo.id);
+    const { data } = await supabase
+      .from('vendas')
+      .select('quantidade, valor')
+      .eq('cultivo_id', cultivo.id);
+
     const totalProducao = (data || []).reduce((a, v) => a + Number(v.quantidade), 0);
     const totalValor = (data || []).reduce((a, v) => a + Number(v.valor), 0);
     const valorMedio = totalProducao > 0 ? (totalValor / totalProducao).toFixed(2) : 0;
 
     setProducao(String(totalProducao));
-    setTotalVenda(totalValor);
+    setTotalVenda(Number(totalValor)); // <<<
     setValorSc(String(valorMedio));
-    setBruto(totalValor);
-    setLiquido(totalValor - despesas);
+    setBruto(Number(totalValor)); // <<<
+    // NÃO calcula líquido aqui; deixa para o useEffect abaixo
   };
 
   useEffect(() => {
@@ -49,6 +55,12 @@ export default function TelaReceitas({ route, navigation }) {
     carregarEventos();
     carregarVendas();
   }, []);
+
+  // Sempre que bruto ou despesas mudarem, recalcula o líquido
+  useEffect(() => {
+    const liq = Number(bruto || 0) - Number(despesas || 0);
+    setLiquido(liq);
+  }, [bruto, despesas]); // <<<
 
   const formatarData = (data) => {
     if (!data) return '';
@@ -114,11 +126,7 @@ export default function TelaReceitas({ route, navigation }) {
 
       {/* Caixa com rolagem independente */}
       <View style={styles.caixaEventos}>
-        <ScrollView
-          style={styles.scrollEventos}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator
-        >
+        <ScrollView style={styles.scrollEventos} nestedScrollEnabled showsVerticalScrollIndicator>
           {eventos.length === 0 ? (
             <Text style={styles.aviso}>Nenhum evento cadastrado</Text>
           ) : (
